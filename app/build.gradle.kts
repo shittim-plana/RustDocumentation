@@ -3,6 +3,7 @@ import java.io.FileInputStream
 
 plugins {
   alias(libs.plugins.android.application)
+  alias(libs.plugins.kotlin.android) // Added this line
   alias(libs.plugins.kotlin.compose)
   alias(libs.plugins.kotlin.serialization) // <- Add this line
 }
@@ -54,7 +55,9 @@ android {
     targetCompatibility = JavaVersion.VERSION_11
   }
   kotlin {
-    compilerOptions.jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+    }
   }
   buildFeatures {
     compose = true
