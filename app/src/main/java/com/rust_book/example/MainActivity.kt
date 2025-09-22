@@ -1,4 +1,4 @@
-package com.rust_book.example.presentation
+package com.rust_book.example
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -11,9 +11,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.rust_book.example.AppNavHost
-import com.rust_book.example.HomeScreenNav
-import com.rust_book.example.SelectLanguageOfBookNav
+import com.rust_book.example.presentation.navigation.AppNavHost
+import com.rust_book.example.presentation.navigation.HomeScreenNav
+import com.rust_book.example.presentation.navigation.SelectLanguageOfBookNav
 import com.rust_book.example.presentation.setup.SetupViewModel
 import com.rust_book.example.ui.theme.RustDocumentationTheme
 import org.koin.androidx.compose.koinViewModel
@@ -29,7 +29,10 @@ class MainActivity : ComponentActivity() {
         if (setupModelSate.isDownloaded == null &&
           (setupModelSate.initPath ?: "").isEmpty()
         ) {
-          Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+          Box(
+            modifier = Modifier.Companion.fillMaxSize(),
+            contentAlignment = Alignment.Companion.Center
+          ) {
             CircularProgressIndicator()
           }
         } else {

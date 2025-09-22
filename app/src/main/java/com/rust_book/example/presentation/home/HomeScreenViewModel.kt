@@ -264,6 +264,8 @@ class HomeScreenViewModel(
       is ShowHistoryPopup -> {
         _state.value = _state.value.copy(showHistoryPopup = action.show)
       }
+
+      is SaveLastOpenedPage -> TODO()
     }
   }
 

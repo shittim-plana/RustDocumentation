@@ -58,7 +58,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavController
-import com.rust_book.example.SelectLanguageOfBookNav
+import com.rust_book.example.presentation.navigation.SelectLanguageOfBookNav
 import com.rust_book.example.ui.theme.GreenGrey40
 import org.koin.androidx.compose.koinViewModel
 

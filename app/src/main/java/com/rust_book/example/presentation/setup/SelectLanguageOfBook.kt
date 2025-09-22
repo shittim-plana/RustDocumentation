@@ -14,7 +14,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.Circle
-import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -36,8 +35,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.rust_book.example.DownloadBookFilesNav
-import com.rust_book.example.HomeScreenNav
+import com.rust_book.example.presentation.navigation.DownloadBookFilesNav
+import com.rust_book.example.presentation.navigation.HomeScreenNav
 import com.rust_book.example.presentation.home.HomeScreenViewModel
 import com.rust_book.example.presentation.setup.models.Books
 import org.koin.androidx.compose.koinViewModel

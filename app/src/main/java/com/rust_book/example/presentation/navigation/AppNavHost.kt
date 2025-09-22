@@ -1,4 +1,4 @@
-package com.rust_book.example
+package com.rust_book.example.presentation.navigation
 
 import android.webkit.WebView
 import androidx.compose.runtime.Composable
