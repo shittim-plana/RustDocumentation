@@ -4,15 +4,15 @@
     "type": "APK",
     "kind": "Directory"
   },
-  "applicationId": "com.example.rust_doc",
+  "applicationId": "com.rust_book.example",
   "variantName": "release",
   "elements": [
     {
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 1,
-      "versionName": "1.0",
+      "versionCode": 15,
+      "versionName": "3.0.0",
       "outputFile": "app-release.apk"
     }
   ],
