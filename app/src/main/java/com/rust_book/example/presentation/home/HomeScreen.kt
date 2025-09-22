@@ -53,13 +53,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavController
-import androidx.navigation.NavHostController
 import com.rust_book.example.SelectLanguageOfBookNav
 import com.rust_book.example.ui.theme.GreenGrey40
 import org.koin.androidx.compose.koinViewModel
@@ -69,6 +67,8 @@ import org.koin.androidx.compose.koinViewModel
 fun HomeScreen(
   nav: NavController,
   initPath: String,
+  webview: WebView? = null,
+  onWebViewLoaded: (WebView) -> Unit,
   homeViewModel: HomeScreenViewModel = koinViewModel()
 ) {
   val homeState by homeViewModel.state.collectAsState()
@@ -76,10 +76,12 @@ fun HomeScreen(
   val isDarkTheme = isSystemInDarkTheme()
   val colorScheme = if (isDarkTheme) darkColorScheme() else lightColorScheme()
 
+
   val context = LocalContext.current
   // Intercept back presses
   BackHandler(enabled = true) {
     homeViewModel.onAction(
+      webview,
       HomeScreenAction.HandleSystemBack { webViewHandledBack ->
         if (!webViewHandledBack) {
           if (nav.previousBackStackEntry != null) {
@@ -99,13 +101,16 @@ fun HomeScreen(
     ) {
       focusManager.clearFocus()
     }, topBar = {
-      HomeTopBar(homeViewModel, homeState, navController = nav)
+      HomeTopBar(webview, homeViewModel, homeState, navController = nav)
     }) { paddingValues ->
     Box(modifier = Modifier.padding(paddingValues)) {
       RustDocumentationScreen(
         homeViewModel,
         webClient = homeViewModel.webViewClient,
-        initPath = initPath
+        initPath = initPath,
+        onWebViewLoaded = {
+          onWebViewLoaded(it)
+        }
       )
       AnimatedVisibility(visible = homeState.isSearchTyping) {
         Box(
@@ -120,7 +125,7 @@ fun HomeScreen(
 
           contentAlignment = Alignment.Center
         ) {
-          if(homeState.searchResult.isEmpty())Text("No Result Found") else LazyColumn {
+          if (homeState.searchResult.isEmpty()) Text("No Result Found") else LazyColumn {
             items(homeState.searchResult.size) {
               Text(
                 homeState.searchResult[it].split("book/").last(),
@@ -128,7 +133,10 @@ fun HomeScreen(
                   .fillMaxWidth()
                   .padding(3.dp)
                   .clickable {
-                    homeViewModel.onAction(HomeScreenAction.ChangeCurrentDoc(homeState.searchResult[it]))
+                    homeViewModel.onAction(
+                      webview,
+                      HomeScreenAction.ChangeCurrentDoc(homeState.searchResult[it])
+                    )
                     println(homeState.searchResult[it])
                     focusManager.clearFocus()
                   }
@@ -149,10 +157,15 @@ fun HomeScreen(
         ListPopup(
           title = "All Favorites",
           items = homeState.allFavoritePath,
-          onDismiss = { homeViewModel.onAction(HomeScreenAction.ShowFavoritesPopup(false)) },
+          onDismiss = {
+            homeViewModel.onAction(
+              webview,
+              HomeScreenAction.ShowFavoritesPopup(false)
+            )
+          },
           onItemClick = { path ->
-            homeViewModel.onAction(HomeScreenAction.ChangeCurrentDoc(path))
-            homeViewModel.onAction(HomeScreenAction.ShowFavoritesPopup(false))
+            homeViewModel.onAction(webview, HomeScreenAction.ChangeCurrentDoc(path))
+            homeViewModel.onAction(webview, HomeScreenAction.ShowFavoritesPopup(false))
           }
         )
       }
@@ -162,10 +175,15 @@ fun HomeScreen(
         ListPopup(
           title = "History",
           items = homeState.historyOfVisitedPath,
-          onDismiss = { homeViewModel.onAction(HomeScreenAction.ShowHistoryPopup(false)) },
+          onDismiss = {
+            homeViewModel.onAction(
+              webview,
+              HomeScreenAction.ShowHistoryPopup(false)
+            )
+          },
           onItemClick = { path ->
-            homeViewModel.onAction(HomeScreenAction.ChangeCurrentDoc(path))
-            homeViewModel.onAction(HomeScreenAction.ShowHistoryPopup(false))
+            homeViewModel.onAction(webview, HomeScreenAction.ChangeCurrentDoc(path))
+            homeViewModel.onAction(webview, HomeScreenAction.ShowHistoryPopup(false))
           }
         )
       }
@@ -177,6 +195,7 @@ fun HomeScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeTopBar(
+  webview: WebView? = null,
   homeViewModel: HomeScreenViewModel,
   homeState: HomeScreenState,
   navController: NavController
@@ -191,12 +210,13 @@ fun HomeTopBar(
         .onFocusChanged {
           if (it.isFocused) {
             homeViewModel.onAction(
+              webview,
               HomeScreenAction.Search(
                 homeState.searchQuery?.split("book/")?.last() ?: "index.html"
               )
             )
           }
-          homeViewModel.onAction(HomeScreenAction.IsSearchTyping(it.isFocused))
+          homeViewModel.onAction(webview, HomeScreenAction.IsSearchTyping(it.isFocused))
         },
       value = if (homeState.searchQuery?.startsWith("http") == true) homeState.searchQuery else homeState.searchQuery?.split(
         "book/"
@@ -207,7 +227,7 @@ fun HomeTopBar(
         )
       },
       onValueChange = {
-        homeViewModel.onAction(HomeScreenAction.Search(it))
+        homeViewModel.onAction(webview, HomeScreenAction.Search(it))
       },
       placeholder = {
         Text("Search")
@@ -221,18 +241,18 @@ fun HomeTopBar(
       Row {
         IconButton(
           onClick = {
-            homeViewModel.onAction(HomeScreenAction.GoBack)
+            homeViewModel.onAction(webview, HomeScreenAction.GoBack)
           }) {
           Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
         }
         IconButton(
           onClick = {
-            homeViewModel.onAction(HomeScreenAction.GoForward)
+            homeViewModel.onAction(webview, HomeScreenAction.GoForward)
           }) {
           Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Forward")
         }
         IconButton(onClick = {
-          homeViewModel.onAction(HomeScreenAction.ShowMenu(true))
+          homeViewModel.onAction(webview, HomeScreenAction.ShowMenu(true))
         }) {
           Icon(
             imageVector = Icons.Filled.MoreVert, contentDescription = "More options"
@@ -243,23 +263,24 @@ fun HomeTopBar(
 
     DropdownMenu(
       expanded = homeState.showMenu, onDismissRequest = {
-        homeViewModel.onAction(HomeScreenAction.ShowMenu(false))
+        homeViewModel.onAction(webview, HomeScreenAction.ShowMenu(false))
       }) {
       DropdownMenuItem(leadingIcon = {
         Icon(Icons.Filled.Home, contentDescription = "Home Icon")
       }, text = {
         Text("Go Home")
       }, onClick = {
-        homeViewModel.onAction(HomeScreenAction.GoHome)
-        homeViewModel.onAction(HomeScreenAction.ShowMenu(false))
+        homeViewModel.onAction(webview, HomeScreenAction.GoHome)
+        homeViewModel.onAction(webview, HomeScreenAction.ShowMenu(false))
       })
       DropdownMenuItem(leadingIcon = {
         Icon(Icons.Filled.AddHome, contentDescription = "Home Icon Outline")
       }, text = {
         Text("Set as Home")
       }, onClick = {
-        if (homeState.currentDocPath != null) {
+        if (homeState.currentDocPath != null && webview != null) {
           homeViewModel.onAction(
+            webview,
             HomeScreenAction.SetAsHome(
               homeState.currentDocPath
             )
@@ -271,15 +292,15 @@ fun HomeTopBar(
           "Successfully Set as Home",
           Toast.LENGTH_SHORT
         ).show()
-        homeViewModel.onAction(HomeScreenAction.ShowMenu(false))
+        homeViewModel.onAction(webview, HomeScreenAction.ShowMenu(false))
       })
       DropdownMenuItem(leadingIcon = {
         Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Favorites")
       }, text = {
         Text("All Favorites")
       }, onClick = {
-        homeViewModel.onAction(HomeScreenAction.ShowFavoritesPopup(true))
-        homeViewModel.onAction(HomeScreenAction.ShowMenu(false))
+        homeViewModel.onAction(webview, HomeScreenAction.ShowFavoritesPopup(true))
+        homeViewModel.onAction(webview, HomeScreenAction.ShowMenu(false))
       })
       DropdownMenuItem(leadingIcon = {
         Icon(
@@ -292,6 +313,7 @@ fun HomeTopBar(
       }, onClick = {
         if (homeState.currentDocPath != null) {
           homeViewModel.onAction(
+            webview,
             if (isFavorite) HomeScreenAction.RemoveFavorite(homeState.currentDocPath)
             else HomeScreenAction.AddFavorite(
               homeState.currentDocPath
@@ -303,7 +325,7 @@ fun HomeTopBar(
           if (isFavorite) "Removed from Favorites" else "Successfully Added to Favorites",
           Toast.LENGTH_SHORT
         ).show()
-        homeViewModel.onAction(HomeScreenAction.ShowMenu(false))
+        homeViewModel.onAction(webview, HomeScreenAction.ShowMenu(false))
       })
 
       DropdownMenuItem(leadingIcon = {
@@ -314,8 +336,8 @@ fun HomeTopBar(
       }, text = {
         Text("History")
       }, onClick = {
-        homeViewModel.onAction(HomeScreenAction.ShowHistoryPopup(true))
-        homeViewModel.onAction(HomeScreenAction.ShowMenu(false))
+        homeViewModel.onAction(webview, HomeScreenAction.ShowHistoryPopup(true))
+        homeViewModel.onAction(webview, HomeScreenAction.ShowMenu(false))
       })
 
       DropdownMenuItem(leadingIcon = {
@@ -327,12 +349,13 @@ fun HomeTopBar(
         Text("Reset App")
       }, onClick = {
         homeViewModel.onAction(
+          webview,
           HomeScreenAction.ResetApp(
             navigateSetupPage = {
               navController.navigate(SelectLanguageOfBookNav)
             })
         )
-        homeViewModel.onAction(HomeScreenAction.ShowMenu(false))
+        homeViewModel.onAction(webview, HomeScreenAction.ShowMenu(false))
       })
     }
   })
@@ -344,7 +367,8 @@ fun RustDocumentationScreen(
   homeViewModel: HomeScreenViewModel,
   webClient: WebViewClient,
   modifier: Modifier = Modifier,
-  initPath: String
+  initPath: String,
+  onWebViewLoaded: (WebView) -> Unit
 ) {
   AndroidView(
     modifier = modifier.fillMaxSize(), factory = { context ->
@@ -354,60 +378,51 @@ fun RustDocumentationScreen(
         settings.allowFileAccess = true
         settings.domStorageEnabled = true
         loadUrl(initPath)
-        homeViewModel.onAction(HomeScreenAction.WebViewInstance(this, initPath))
+        onWebViewLoaded(this)
+        homeViewModel.onAction(this, HomeScreenAction.WebViewInstanceCreate(initPath))
       }
     })
 }
 
 @Composable
 fun ListPopup(
-    title: String,
-    items: List<String>,
-    onDismiss: () -> Unit,
-    onItemClick: (String) -> Unit
+  title: String,
+  items: List<String>,
+  onDismiss: () -> Unit,
+  onItemClick: (String) -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(title) },
-        text = {
-            LazyColumn {
-                items(items.size) { index ->
-                    val item = items[index]
-                    Text(
-                        text = item.split("book/").lastOrNull() ?: item,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onItemClick(item) }
-                            .padding(vertical = 8.dp, horizontal = 16.dp)
-                    )
-                }
-                if (items.isEmpty()) {
-                    item {
-                        Text(
-                            text = "No items found",
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 8.dp, horizontal = 16.dp)
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Close")
-            }
-        },
-        properties = DialogProperties(dismissOnClickOutside = true)
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun HomeScreenPreview() {
-  val previewNavController = NavHostController(LocalContext.current)
-  HomeScreen(
-    nav = previewNavController,
-    initPath = "file:///android_asset/index.html",
+  AlertDialog(
+    onDismissRequest = onDismiss,
+    title = { Text(title) },
+    text = {
+      LazyColumn {
+        items(items.size) { index ->
+          val item = items[index]
+          Text(
+            text = item.split("book/").lastOrNull() ?: item,
+            modifier = Modifier
+              .fillMaxWidth()
+              .clickable { onItemClick(item) }
+              .padding(vertical = 8.dp, horizontal = 16.dp)
+          )
+        }
+        if (items.isEmpty()) {
+          item {
+            Text(
+              text = "No items found",
+              modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp, horizontal = 16.dp)
+            )
+          }
+        }
+      }
+    },
+    confirmButton = {
+      TextButton(onClick = onDismiss) {
+        Text("Close")
+      }
+    },
+    properties = DialogProperties(dismissOnClickOutside = true)
   )
 }

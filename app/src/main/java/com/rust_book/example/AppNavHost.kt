@@ -1,5 +1,6 @@
 package com.rust_book.example
 
+import android.webkit.WebView
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -16,6 +17,7 @@ fun AppNavHost(
   navController: NavHostController = rememberNavController(),
   startDestination: Any,
 ) {
+  var webView: WebView? = null
   NavHost(
     navController = navController,
     startDestination = startDestination
@@ -29,7 +31,13 @@ fun AppNavHost(
     }
     composable<HomeScreenNav> {
       val initPath = it.toRoute<HomeScreenNav>().initPath
-      HomeScreen(navController, initPath)
+      HomeScreen(
+        navController, initPath,
+        onWebViewLoaded = { thisWebView ->
+          webView = thisWebView
+        },
+        webview = webView,
+      )
     }
   }
 }

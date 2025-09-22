@@ -13,7 +13,7 @@ sealed class HomeScreenAction {
   object GoBack : HomeScreenAction()
   object GoHome : HomeScreenAction()
   data class SetAsHome(val path: String) : HomeScreenAction()
-  data class WebViewInstance(val webView: WebView, val initPath: String) : HomeScreenAction()
+  data class WebViewInstanceCreate(val initPath: String) : HomeScreenAction()
   class ResetApp(navigateSetupPage: () -> Unit) : HomeScreenAction()
   data class HandleSystemBack(val onHandled: (Boolean) -> Unit) : HomeScreenAction()
   data class ShowFavoritesPopup(val show: Boolean) : HomeScreenAction()

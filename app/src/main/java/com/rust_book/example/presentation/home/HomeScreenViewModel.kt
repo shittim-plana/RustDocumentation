@@ -29,7 +29,7 @@ class HomeScreenViewModel(
   private val _state = MutableStateFlow(HomeScreenState())
   val state = _state.asStateFlow()
 
-  // Expose WebView's back capability as StateFlow
+
   private val _canWebViewGoBack = MutableStateFlow(false)
   val canWebViewGoBack: StateFlow<Boolean> = _canWebViewGoBack.asStateFlow()
 
@@ -37,7 +37,7 @@ class HomeScreenViewModel(
     override fun onPageFinished(view: WebView?, url: String?) {
       super.onPageFinished(view, url)
       if (url != null) justChangeCurrentDoc(url)
-      // Update back capability when page finishes loading
+
       _canWebViewGoBack.value = view?.canGoBack() ?: false
     }
 
@@ -47,21 +47,20 @@ class HomeScreenViewModel(
       println(requestedUrl)
       if (requestedUrl != null && requestedUrl != _state.value.currentDocPath) {
         println("Action = $requestedUrl")
-        onAction(action = ChangeCurrentDoc(requestedUrl))
+        if (view != null) onAction(view, action = ChangeCurrentDoc(requestedUrl))
       }
-      // Update back capability when URL loading changes
+
       _canWebViewGoBack.value = view?.canGoBack() ?: false
-      return false // Return false to let the WebView handle the URL loading
+      return false
     }
 
-    // It's also good to update canGoBack when the page starts loading
+
     override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
       super.onPageStarted(view, url, favicon)
       _canWebViewGoBack.value = view?.canGoBack() ?: false
     }
   }
 
-  private var _webView: WebView? = null
 
   init {
     viewModelScope.launch {
@@ -73,21 +72,21 @@ class HomeScreenViewModel(
       _state.value = _state.value.copy(
         allFavoritePath = favoritePaths.toList(),
         homePath = homePath,
-        currentDocPath = homePath, // Start at home path
+        currentDocPath = homePath,
         searchQuery = homePath?.split("book/")?.last(),
         historyOfVisitedPath = history.toList(),
         language = language
       )
 
 
-      // Update isThisFavorite based on initial currentDocPath
+
       _state.value = _state.value.copy(isThisFavorite = favoritePaths.contains(homePath))
 
 
       getAllHtmlFileList(language)
 
 
-      // Observe changes to favorites, home path and history
+
       dataStore.data
         .map { prefs ->
           Triple(
@@ -100,7 +99,7 @@ class HomeScreenViewModel(
           _state.value = _state.value.copy(
             allFavoritePath = favorites.toList(),
             homePath = home,
-            isThisFavorite = favorites.contains(_state.value.currentDocPath), // Keep isThisFavorite updated
+            isThisFavorite = favorites.contains(_state.value.currentDocPath),
             historyOfVisitedPath = history.toList()
           )
         }
@@ -121,15 +120,14 @@ class HomeScreenViewModel(
     }
   }
 
-  fun onAction(action: HomeScreenAction) {
+  fun onAction(webView: WebView? = null, action: HomeScreenAction) {
+    if (webView == null) return;
     when (action) {
       is ChangeCurrentDoc -> {
-
-
         action.path.let {
           val history = _state.value.historyOfVisitedPath.toMutableList().take(20)
-            .toMutableList() // Limit history size
-          if (history.firstOrNull() != it) { // Avoid duplicate entries at the top
+            .toMutableList()
+          if (history.firstOrNull() != it) {
             if (it != null) history.add(0, it)
           }
           viewModelScope.launch {
@@ -138,33 +136,32 @@ class HomeScreenViewModel(
             }
           }
           println("Action Path ${action.path}")
-       if(action.path!=null)   _webView?.loadUrl(action.path)
+          if (action.path != null) webView.loadUrl(action.path)
           _state.value = _state.value.copy(
             currentDocPath = it,
-            searchQuery = if (it?.startsWith("http")==true) it else it?.split("book/")?.last(),
+            searchQuery = if (it?.startsWith("http") == true) it else it?.split("book/")?.last(),
             historyOfVisitedPath = history,
             isThisFavorite = _state.value.allFavoritePath.contains(it)
           )
         }
         println(File("XYZ ->" + action.path).exists().toString())
-        if (action.path!=null) {
-          _webView?.loadUrl(action.path) // Make sure this is called
+        if (action.path != null) {
+          webView.loadUrl(action.path)
           _state.value = _state.value.copy(
             currentDocPath = action.path,
             searchQuery = if (action.path.startsWith("http")) action.path else action.path.split("book/")
               .lastOrNull() ?: "",
-            // historyOfVisitedPath = history, // Assuming history is updated correctly
+
             isThisFavorite = _state.value.allFavoritePath.contains(action.path)
           )
         }
-        _canWebViewGoBack.value = _webView?.canGoBack() ?: false
+        _canWebViewGoBack.value = webView.canGoBack()
 
       }
 
-      is WebViewInstance -> {
-        _webView = action.webView
-        _webView?.loadUrl(action.initPath)
-        _canWebViewGoBack.value = _webView?.canGoBack() ?: false
+      is WebViewInstanceCreate -> {
+        webView.loadUrl(action.initPath)
+        _canWebViewGoBack.value = webView.canGoBack()
       }
 
       is AddFavorite -> {
@@ -173,7 +170,6 @@ class HomeScreenViewModel(
             val currentFavorites = it[PreferencesKeys.FAVORITE_PATHS] ?: emptySet()
             it[PreferencesKeys.FAVORITE_PATHS] = currentFavorites + action.path
           }
-          // UI update will be handled by the collector in init
         }
       }
 
@@ -183,7 +179,7 @@ class HomeScreenViewModel(
             val currentFavorites = it[PreferencesKeys.FAVORITE_PATHS] ?: emptySet()
             it[PreferencesKeys.FAVORITE_PATHS] = currentFavorites - action.path
           }
-          // UI update will be handled by the collector in init
+
         }
       }
 
@@ -207,27 +203,27 @@ class HomeScreenViewModel(
         _state.value = _state.value.copy(isSearchTyping = action.isTyping)
       }
 
-      is GoBack -> { // This is for your UI back button
-        if (_webView?.canGoBack() == true) {
-          _webView?.goBack()
-          _canWebViewGoBack.value = _webView?.canGoBack() ?: false
+      is GoBack -> {
+        if (webView.canGoBack()) {
+          webView.goBack()
+          _canWebViewGoBack.value = webView.canGoBack()
         }
       }
 
-      is GoForward -> { // This is for your UI forward button
-        if (_webView?.canGoForward() == true) {
-          _webView?.goForward()
+      is GoForward -> {
+        if (webView.canGoForward()) {
+          webView.goForward()
           _canWebViewGoBack.value =
-            _webView?.canGoBack() ?: false // canGoBack might change after goForward
+            webView.canGoBack()
         }
       }
 
       is GoHome -> {
         viewModelScope.launch {
           val homePath = dataStore.data.first()[PreferencesKeys.HOME_PATH]
-          onAction(ChangeCurrentDoc(homePath)) // This will also update webview
+          onAction(webView, ChangeCurrentDoc(homePath))
           if (homePath != null) {
-            _webView?.loadUrl(homePath)
+            webView.loadUrl(homePath)
           }
         }
       }
@@ -237,8 +233,6 @@ class HomeScreenViewModel(
           dataStore.edit {
             it[PreferencesKeys.HOME_PATH] = action.path
           }
-          // UI update for homePath will be handled by the collector in init
-          // Optionally, show a confirmation to the user (e.g., via a Toast or Snackbar)
         }
       }
 
@@ -247,22 +241,18 @@ class HomeScreenViewModel(
           dataStore.edit {
             it.clear()
           }
-          // also delete all files in the data folder. For Example : file:///data/user/0/com.example.rust_doc/English/
           if (_state.value.language != null) {
             AppUtils().deleteFolder(_state.value.language!!, application = application)
           }
-
         }
       }
 
       is HandleSystemBack -> {
-        if (_webView?.canGoBack() == true) {
-          _webView?.goBack()
-          _canWebViewGoBack.value = _webView?.canGoBack() ?: false
-          // Return true to indicate the back event was handled by the WebView
+        if (webView.canGoBack()) {
+          webView.goBack()
+          _canWebViewGoBack.value = webView.canGoBack()
           action.onHandled(true)
         } else {
-          // Return false to indicate the WebView cannot go back, let system handle it
           action.onHandled(false)
         }
       }
@@ -285,21 +275,17 @@ class HomeScreenViewModel(
         val fileList = mutableListOf<String>()
         val folder = File(targetFolder)
         if (folder.exists() && folder.isDirectory) {
-          try { // Add try-catch for potential IOExceptions during walk
+          try {
             folder.walkTopDown().forEach { file ->
               if (file.isFile && file.extension == "html") {
                 fileList.add(file.absolutePath)
               }
             }
           } catch (e: Exception) {
-            // Handle potential exceptions during file walking, e.g., permission issues
-            // You might want to log the error or return an empty list,
-            // depending on how you want to handle failures.
             println("Error walking file tree: ${e.message}")
-            // Optionally, rethrow if it's critical, or return current list (possibly empty)
           }
         }
-        fileList // This is the return value of the withContext block
+        fileList
       })
     }
   }
