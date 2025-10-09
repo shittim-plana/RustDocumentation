@@ -18,6 +18,5 @@ sealed class HomeScreenAction {
   data class HandleSystemBack(val onHandled: (Boolean) -> Unit) : HomeScreenAction()
   data class ShowFavoritesPopup(val show: Boolean) : HomeScreenAction()
   data class ShowHistoryPopup(val show: Boolean) : HomeScreenAction()
-  data class SaveLastOpenedPage(val webView: WebView) : HomeScreenAction()
 
 }

@@ -11,6 +11,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.rust_book.example.presentation.home.HomeScreenViewModel
 import com.rust_book.example.presentation.navigation.AppNavHost
 import com.rust_book.example.presentation.navigation.HomeScreenNav
 import com.rust_book.example.presentation.navigation.SelectLanguageOfBookNav
@@ -36,11 +37,13 @@ class MainActivity : ComponentActivity() {
             CircularProgressIndicator()
           }
         } else {
-          println("justChangeCurrentDoc1 -> ${setupModelSate.initPath}")
+          val homeScreenViewModel = koinViewModel<HomeScreenViewModel>()
+          val lastOpenedPath: String? =
+            homeScreenViewModel.state.collectAsState().value.historyOfVisitedPath.lastOrNull()
           AppNavHost(
             startDestination = if (setupModelSate.isDownloaded == true) {
               HomeScreenNav(
-                setupModelSate.initPath!!
+                lastOpenedPath ?: setupModelSate.initPath!!
               )
             } else {
               SelectLanguageOfBookNav
