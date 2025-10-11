@@ -2,6 +2,9 @@ package com.rust_book.example.presentation.navigation
 
 import android.webkit.WebView
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -17,7 +20,7 @@ fun AppNavHost(
   navController: NavHostController = rememberNavController(),
   startDestination: Any,
 ) {
-  var webView: WebView? = null
+    val webView = remember { mutableStateOf<WebView?>(null) }
   NavHost(
     navController = navController,
     startDestination = startDestination
@@ -34,9 +37,9 @@ fun AppNavHost(
       HomeScreen(
         navController, initPath,
         onWebViewLoaded = { thisWebView ->
-          webView = thisWebView
+          webView.value = thisWebView
         },
-        webview = webView,
+        webview = webView.value,
       )
     }
   }

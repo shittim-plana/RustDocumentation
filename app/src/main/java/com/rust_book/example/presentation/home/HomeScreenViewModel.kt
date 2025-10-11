@@ -121,7 +121,10 @@ class HomeScreenViewModel(
   }
 
   fun onAction(webView: WebView? = null, action: HomeScreenAction) {
-    if (webView == null) return;
+    if (webView == null) {
+        println("Fount Web View null")
+        return; }
+      println("Fount Web View Not Null")
     when (action) {
       is ChangeCurrentDoc -> {
         action.path.let {
