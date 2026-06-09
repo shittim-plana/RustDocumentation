@@ -114,7 +114,7 @@ data class SetupModelSate(
   val downloadError: String? = null, // Added for download error
   val downloadedZipPath: String? = null, // Added for downloaded file path,
   val isExtracting: Boolean = false,
-  val selectedBookUrl: String = "https://ismailhosenismailjames.github.io/rust_book_multi_language/book/English.zip",
+  val selectedBookUrl: String = "https://github.com/shittim-plana/doc.rust-kr.org/releases/download/v1/en.zip",
   val listOfBooks: List<Books> = listOf<Books>(
     Books(
       link = "https://ismailhosenismailjames.github.io/rust_book_multi_language/book/Danske.zip",
@@ -127,7 +127,7 @@ data class SetupModelSate(
       isComplete = true
     ),
     Books(
-      link = "https://ismailhosenismailjames.github.io/rust_book_multi_language/book/English.zip",
+      link = "https://github.com/shittim-plana/doc.rust-kr.org/releases/download/v1/en.zip",
       language = "English",
       isComplete = true
     ),
@@ -192,7 +192,7 @@ data class SetupModelSate(
       isComplete = true
     ),
     Books(
-      link = "https://ismailhosenismailjames.github.io/rust_book_multi_language/book/%ED%95%9C%EA%B5%AD%EC%96%B4.zip",
+      link = "https://github.com/shittim-plana/doc.rust-kr.org/releases/download/v1/ko.zip",
       language = "한국어",
       isComplete = true
     ),
